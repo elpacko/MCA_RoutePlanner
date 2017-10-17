@@ -46,25 +46,25 @@ lines.append("45 45 10")
 lines.append("25 45 10")
 lines.append("25 25 10")
 lines.append("45 25 10")
-
-lines.append("41 49 10")
-lines.append("35 17 7")
-lines.append("55 45 13")
-lines.append("55 20 19")
-lines.append("15 30 26")
-lines.append("25 30 3")
-lines.append("20 50 5")
-lines.append("10 43 9")
-
-lines.append("33 44 20")
-lines.append("9 56 13")
-
-lines.append("66 14 22")
-lines.append("44 13 28")
-lines.append("26 13 12")
-lines.append("11 28 6")
-
-lines.append("17 64 14")
+#
+# lines.append("41 49 10")
+# lines.append("35 17 7")
+# lines.append("55 45 13")
+# lines.append("55 20 19")
+# lines.append("15 30 26")
+# lines.append("25 30 3")
+# lines.append("20 50 5")
+# lines.append("10 43 9")
+#
+# lines.append("33 44 20")
+# lines.append("9 56 13")
+#
+# lines.append("66 14 22")
+# lines.append("44 13 28")
+# lines.append("26 13 12")
+# lines.append("11 28 6")
+#
+# lines.append("17 64 14")
 # lines
 
 
@@ -75,7 +75,7 @@ lines.append("17 64 14")
 # el archivo se puede obtener de el url vrpURL
 # la definicion de las lineas del archivo estan especificadas en: http://people.brunel.ac.uk/~mastjjb/jeb/orlib/vrpinfo.html
 
-lines = tuple(open('vrpnc10.txt', 'r'))  # archivo
+lines = tuple(open('vrpnc6.txt', 'r'))  # archivo
 
 
 def calculateMagnitude(_coordenada):
@@ -184,12 +184,12 @@ grafoCompleto = {}
 depotDistances = {}
 
 for item in stopData:
-    depotDistances[str(item.paradaID)] = item.coordenadaPolarRespectoDepot.magnitud
+    depotDistances[item.paradaID] = item.coordenadaPolarRespectoDepot.magnitud
 
 #depotDistances.append((str(stopDataId + 1), magnitude))
 
 
-grafoCompleto['0'] = depotDistances
+grafoCompleto[0] = depotDistances
 # el elemento 0 es el depot, el 1 es el primer elemento del stopData (indice 0)
 
 for i, originPoint in enumerate(stopData):
@@ -198,12 +198,12 @@ for i, originPoint in enumerate(stopData):
         sendCoordenate = CoordenadaCartesiana()
         sendCoordenate.x = destinationPoint.coordenadaRespectoDepot.x - originPoint.coordenadaRespectoDepot.x
         sendCoordenate.y = destinationPoint.coordenadaRespectoDepot.y - originPoint.coordenadaRespectoDepot.y
-        originPointDistances[str(j + i + 2)] = calculateMagnitude(sendCoordenate);
-    grafoCompleto[str(i + 1)] = originPointDistances
+        originPointDistances[(j + i + 2)] = calculateMagnitude(sendCoordenate);
+    grafoCompleto[(i + 1)] = originPointDistances
 
 tempVar = 0
 
-print grafoCompleto[str(tempVar)]
+print grafoCompleto[(tempVar)]
 # routeSettings
 # number of customers, vehicle capacity, maximum route time, drop time
 def generarPoblacionInicial(stopData, routeSettings):
@@ -215,9 +215,9 @@ def generarPoblacionInicial(stopData, routeSettings):
         cargaDeRuta = 0
         for j in x[i:] + x[:i]:
             cargaDeRuta += stopData[j].peso
-            if cargaDeRuta >= routeSettings.VehicleCapacity:
+            if cargaDeRuta > routeSettings.VehicleCapacity:
                 rutaActual += 1
-                cargaDeRuta = 0
+                cargaDeRuta = stopData[j].peso
             solucionActual[j] = rutaActual
         poblacionInicial.append(solucionActual)
     return poblacionInicial
@@ -250,13 +250,14 @@ def mutarSolucion(hijo1,hijo2):
 # In[12]:
 
 
-def generarHijos(padre1, padre2):
+def generarHijos(padre1, padre2, mutacion):
     # Calculo de los Crossover Points
     crossoverSize = int(len(padre1) / 3)
     # print (crossoverSize)
     hijo1 = padre1[:crossoverSize] + padre2[crossoverSize:(crossoverSize * 2)] + padre1[(crossoverSize * 2):]
     hijo2 = padre2[:crossoverSize] + padre1[crossoverSize:(crossoverSize * 2)] + padre2[(crossoverSize * 2):]
-    if random.random() < 0.001:
+    if random.random() < mutacion:
+        #print('Mutando...')
         hijo1, hijo2 = mutarSolucion(hijo1, hijo2)
     return hijo1, hijo2
 
@@ -330,17 +331,14 @@ def calculaFitness(solucion):
 
 def calcularDistanciaRecorrida(solucion):
     distanciaDeRutas={}
-
     solucionNP = np.asarray(solucion)
-
     for rutaNumero in np.unique(solucionNP):
-        distanciaDeRutas[str(rutaNumero)] = 0.0
+        distanciaDeRutas[rutaNumero] = 0.0
         paradaAnterior = 0
-        for paradaID in np.argwhere(solucionNP == rutaNumero): #TODO: aqui se asume que el orden es secuencial al polar, se necesita el 2opt para que nos de el orden
-            distanciaDeRutas[str(rutaNumero)]+=grafoCompleto[str(paradaAnterior)][str(paradaID[0]+1)]
-            paradaAnterior = paradaID[0]
-        distanciaDeRutas[str(rutaNumero)] += grafoCompleto[str(0)][str(paradaAnterior)]
-
+        for paradaID in np.add(np.where(solucionNP == int(rutaNumero))[0],1): #TODO: aqui se asume que el orden es secuencial al polar, se necesita el 2opt para que nos de el orden
+            distanciaDeRutas[rutaNumero]+=grafoCompleto[paradaAnterior][paradaID ]
+            paradaAnterior = paradaID
+        distanciaDeRutas[rutaNumero] += grafoCompleto[0][paradaAnterior]
     return distanciaDeRutas
 
 def dosOPT():
@@ -378,6 +376,7 @@ def compararHijo(fitnessYUnfitnessDePoblacion, solucionHijo, poblacion, stopData
     poblacionFitnessMenorHijo = np.where(yNP < hijoUnfitness)[0].tolist()
     individuoAReemplazarID = -1
     # s1 es donde el fitness y el unfitness de cualquier elemento de la solucion es mayor o igual al del hijo
+
     s1 = set(poblacionUnitnessMayorHijo).intersection(poblacionFitnessMayorHijo)
     if len(s1) > 0:
         individuoAReemplazarID = list(s1)[0]
@@ -390,6 +389,7 @@ def compararHijo(fitnessYUnfitnessDePoblacion, solucionHijo, poblacion, stopData
     if len(s3) > 0 and individuoAReemplazarID < 0:
         individuoAReemplazarID = list(s3)[0]
     if individuoAReemplazarID >= 0:
+        #print('se reemplaza:'+ str(individuoAReemplazarID))
         poblacion[individuoAReemplazarID] = solucionHijo
         fitnessYUnfitnessDePoblacion.fitness[individuoAReemplazarID] = hijoUnfitness
         fitnessYUnfitnessDePoblacion.unfitness[individuoAReemplazarID] = hijoFitness
@@ -404,15 +404,15 @@ def dibujaGrafo( grafocompleto, individuo, ordenindividuo,generacionActual,indiv
     for numeroRutaActual in range(1, np.amax(individuoNP)+1):
         ultimaParadaEnRuta = '0'
         rutaActual = np.where(individuoNP == numeroRutaActual)[0].tolist()
-        if(len(rutaActual)>1):
-            G.add_edge('0', str(rutaActual[0]), color=numeroRutaActual)
+        if(len(rutaActual)>=1):
+            #G.add_edge('0', str(rutaActual[0]), color=numeroRutaActual)
             for i, paradaEnRuta in enumerate(rutaActual):
                 fromParada = ultimaParadaEnRuta
-                toParada = str(paradaEnRuta)
-                ultimaParadaEnRuta = str(paradaEnRuta)
+                toParada = str(paradaEnRuta+1)
+                ultimaParadaEnRuta = str(toParada)
                 G.add_edge(fromParada, toParada, color=numeroRutaActual)
             G.add_edge(str(ultimaParadaEnRuta), '0', color=numeroRutaActual)
-    nodeColors = [int(individuo[int(node)]) for node in G.nodes()]
+    nodeColors = [int(individuo[int(node)-1]) for node in G.nodes()]
 
     edges = G.edges()
     colors = [G[u][v]['color'] for u, v in edges]
@@ -429,7 +429,7 @@ def dibujaGrafo( grafocompleto, individuo, ordenindividuo,generacionActual,indiv
     #plt.imshow(img, zorder=0, extent=[-mapCoordinateExtension*1.42 , mapCoordinateExtension*1.42 , -mapCoordinateExtension  , mapCoordinateExtension  ])
 
     plt.title("Generacion "+str(generacionActual)+ " Individuo "+ str(individuoNumero))
-
+    #batchMode = False
     if(batchMode):
         plt.savefig("OutputGraphs/Gen"+str(generacionActual)+"Ind" + str(individuoNumero) + ".png")
         plt.clf()
@@ -440,50 +440,53 @@ def dibujaGrafo( grafocompleto, individuo, ordenindividuo,generacionActual,indiv
 
 # generacion de variables Iniciales
 fitnessYUnfitnessDePoblacion = FitnessUnfitness()
-#fitnessYUnfitnessDePoblacion.fitness = generateMatrizDeCeros(len(stopData))
-#fitnessYUnfitnessDePoblacion.unfitness = generateMatrizDeCeros(len(stopData))
 poblacion = generarPoblacionInicial(stopDataOrdenado, routeSettings)
 fitnessYUnfitnessDePoblacion = calcularFitnessyUnfitnessDePoblacion(stopDataOrdenado, poblacion)
+
+#valores de afinacion
+numeroDeHijosPorGeneracion = 200
+numeroDeGeneraciones = 20
+porcentajeMutacion = 0.01
 
 numeroDeGeneracion = 0
 mejoraEntreGeneraciones = 100.0
 
-dibujaGrafo(grafoCompleto, poblacion[0], None, 0, 0,True)
-dibujaGrafo(grafoCompleto, poblacion[1], None, 0, 1,True)
-dibujaGrafo(grafoCompleto, poblacion[5], None, 0, 5,True)
-dibujaGrafo(grafoCompleto, poblacion[10], None, 0,10,True)
+poblacionFitnessNP = np.asarray(fitnessYUnfitnessDePoblacion.fitness)
 
-while numeroDeGeneracion <1000: # pendiente agregar chequeo si se quedo estancado (local minima)
+
+
+for i, individuoAImprimir in enumerate(poblacion):
+    dibujaGrafo(grafoCompleto, individuoAImprimir, None, 0,  i)
+
+
+while numeroDeGeneracion <numeroDeGeneraciones: # pendiente agregar chequeo si se quedo estancado (local minima)
     print ("Generacion:"+str(numeroDeGeneracion) + " Mejora:" +  str(mejoraEntreGeneraciones) )
 
-    fitnessYUnfitnessDeGeneracion = sum(fitnessYUnfitnessDePoblacion.fitness)/float(len(fitnessYUnfitnessDePoblacion.fitness)) #average de Fitness
+    fitnessYUnfitnessDeGeneracion = average(fitnessYUnfitnessDePoblacion.fitness)
     print ("Average fitness:" + str(fitnessYUnfitnessDeGeneracion))
     poblacionNueva = poblacion
-    for i in range(5000):
-        if i % 1000 == 0:
+    for i in range(numeroDeHijosPorGeneracion):
+        if i % 100 == 0:
             print ("Hijo " + str(i))
         idPadre1 = random.randint(1, len(poblacion))
         idPadre2 = random.randint(1, len(poblacion))
         while idPadre1 == idPadre2:
             idPadre2 = random.randint(1, len(poblacion))
-        #pendiente
-        hijo1, hijo2 = generarHijos(poblacion[idPadre1-1], poblacion[idPadre2-1])
+        hijo1, hijo2 = generarHijos(poblacion[idPadre1-1], poblacion[idPadre2-1], porcentajeMutacion)
         poblacionNueva, fitnessYUnfitnessDePoblacion = compararHijo(fitnessYUnfitnessDePoblacion, hijo1, poblacionNueva, stopDataOrdenado)
         poblacionNueva, fitnessYUnfitnessDePoblacion = compararHijo(fitnessYUnfitnessDePoblacion, hijo2, poblacionNueva, stopDataOrdenado)
     numeroDeGeneracion += 1
-    nuevamejoraEntreGeneraciones = 1 - (sum(fitnessYUnfitnessDePoblacion.fitness)/float(len(fitnessYUnfitnessDePoblacion.fitness)) / fitnessYUnfitnessDeGeneracion)
+    nuevamejoraEntreGeneraciones = 1 - (average(fitnessYUnfitnessDePoblacion.fitness) / fitnessYUnfitnessDeGeneracion)
 
-    #if numeroDeGeneracion % 20 == 0:
-    poblacionFitnessNP = np.asarray(fitnessYUnfitnessDePoblacion.fitness)
-    dibujaGrafo( grafoCompleto, poblacion[np.argmin(poblacionFitnessNP)], None, numeroDeGeneracion,np.argmin(poblacionFitnessNP))
-    dibujaGrafo(grafoCompleto, poblacion[np.argmax(poblacionFitnessNP)], None, numeroDeGeneracion,
-                np.argmax(poblacionFitnessNP))
 
     if nuevamejoraEntreGeneraciones  > 0:
         poblacion = poblacionNueva
         mejoraEntreGeneraciones = nuevamejoraEntreGeneraciones
-
-
+        poblacionFitnessNP = np.asarray(fitnessYUnfitnessDePoblacion.fitness)
+        dibujaGrafo(grafoCompleto, poblacion[np.argmin(poblacionFitnessNP)], None, numeroDeGeneracion,
+                    '_MenorFitness_' + str(np.argmin(poblacionFitnessNP)))
+        dibujaGrafo(grafoCompleto, poblacion[np.argmax(poblacionFitnessNP)], None, numeroDeGeneracion,
+                    '_MayorFitness_' + str(np.argmax(poblacionFitnessNP)))
     else:
         print("brincando generacion, Mejora:" + str(nuevamejoraEntreGeneraciones))
 
