@@ -46,15 +46,15 @@ lines.append("45 45 10")
 lines.append("25 45 10")
 lines.append("25 25 10")
 lines.append("45 25 10")
-#
-# lines.append("41 49 10")
-# lines.append("35 17 7")
-# lines.append("55 45 13")
-# lines.append("55 20 19")
-# lines.append("15 30 26")
-# lines.append("25 30 3")
-# lines.append("20 50 5")
-# lines.append("10 43 9")
+
+lines.append("41 49 10")
+lines.append("35 17 7")
+lines.append("55 45 13")
+lines.append("55 20 19")
+lines.append("15 30 26")
+lines.append("25 30 3")
+lines.append("20 50 5")
+lines.append("10 43 9")
 #
 # lines.append("33 44 20")
 # lines.append("9 56 13")
@@ -169,7 +169,7 @@ stopDataOrdenado = sorted(stopData, key=lambda stop: stop.coordenadaPolarRespect
 
 
 for i, stop in enumerate(stopDataOrdenado):
-    print("angulo:" + str(stop.coordenadaPolarRespectoDepot.angulo) + " x:" +  str(stop.coordenadaRespectoDepot.x) + " y:" + str(stop.coordenadaRespectoDepot.y))
+    #print("angulo:" + str(stop.coordenadaPolarRespectoDepot.angulo) + " x:" +  str(stop.coordenadaRespectoDepot.x) + " y:" + str(stop.coordenadaRespectoDepot.y))
     stopData[stop.paradaID-1].ordenAnguloPolar = i+1
     posicionAnguloPolar[str(i+1)] = (stop.coordenadaRespectoDepot.x, stop.coordenadaRespectoDepot.y)
 
@@ -235,7 +235,12 @@ def generarPoblacionInicial(stopData, routeSettings):
 
 def mutarSolucion(hijo1,hijo2):
     genAMutar = random.randint(0, len(hijo1)-1)
+    retryCount = 0
     while hijo1[genAMutar] == hijo2[genAMutar]:
+        retryCount += 1
+        if (retryCount>100):
+            print ('mutar Solucion 100th retry')
+            break
         genAMutar = random.randint(0, len(hijo1)-1)
     # print("Mutando de:" + str(hijo1[genAMutar]) + " a " + str(hijo2[genAMutar]))
     valorHijo1 = hijo1[genAMutar]
@@ -368,12 +373,12 @@ def compararHijo(fitnessYUnfitnessDePoblacion, solucionHijo, poblacion, stopData
     poblacionUnitnessMayorHijo = []
     poblacionFitnessMenorHijo = []
     poblacionUnitnessMenorHijo = []
-    xNP = np.asarray(fitnessYUnfitnessDePoblacion.fitness)
-    poblacionUnitnessMayorHijo = np.where(xNP >= hijoUnfitness)[0].tolist()
-    poblacionUnitnessMenorHijo = np.where(xNP < hijoUnfitness)[0].tolist()
-    yNP = np.asarray(fitnessYUnfitnessDePoblacion.unfitness)
-    poblacionFitnessMayorHijo = np.where(yNP >= hijoUnfitness)[0].tolist()
-    poblacionFitnessMenorHijo = np.where(yNP < hijoUnfitness)[0].tolist()
+    fitnessNP = np.asarray(fitnessYUnfitnessDePoblacion.fitness)
+    poblacionUnitnessMayorHijo = np.where(fitnessNP >= hijoFitness)[0].tolist()
+    poblacionUnitnessMenorHijo = np.where(fitnessNP < hijoFitness)[0].tolist()
+    unfitnessNP = np.asarray(fitnessYUnfitnessDePoblacion.unfitness)
+    poblacionFitnessMayorHijo = np.where(unfitnessNP >= hijoUnfitness)[0].tolist()
+    poblacionFitnessMenorHijo = np.where(unfitnessNP < hijoUnfitness)[0].tolist()
     individuoAReemplazarID = -1
     # s1 es donde el fitness y el unfitness de cualquier elemento de la solucion es mayor o igual al del hijo
 
@@ -391,8 +396,8 @@ def compararHijo(fitnessYUnfitnessDePoblacion, solucionHijo, poblacion, stopData
     if individuoAReemplazarID >= 0:
         #print('se reemplaza:'+ str(individuoAReemplazarID))
         poblacion[individuoAReemplazarID] = solucionHijo
-        fitnessYUnfitnessDePoblacion.fitness[individuoAReemplazarID] = hijoUnfitness
-        fitnessYUnfitnessDePoblacion.unfitness[individuoAReemplazarID] = hijoFitness
+        fitnessYUnfitnessDePoblacion.fitness[individuoAReemplazarID] = hijoFitness
+        fitnessYUnfitnessDePoblacion.unfitness[individuoAReemplazarID] = hijoUnfitness
     return poblacion, fitnessYUnfitnessDePoblacion
 
 
@@ -418,9 +423,13 @@ def dibujaGrafo( grafocompleto, individuo, ordenindividuo,generacionActual,indiv
     colors = [G[u][v]['color'] for u, v in edges]
 
 
-    nx.draw_networkx_nodes(G, posicionAnguloPolar, node_color=nodeColors, cmap=plt.get_cmap('jet'), label='x', node_size=20)
-    nx.draw_networkx_edges(G, posicionAnguloPolar, arrows=False, edge_color=colors)
+    nx.draw_networkx_nodes(G, posicionAnguloPolar, node_color=nodeColors, cmap=plt.get_cmap('jet'), label='nodes', node_size=20)
+    nx.draw_networkx_edges(G, posicionAnguloPolar, arrows=False, edge_color=colors,  )
+    nx.draw_networkx_labels(G, posicionAnguloPolar, font_size=12)
     plt.grid(True)
+    #plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+
+
 
     #imgFile = open('juarez.jpg', 'r')
     #datafile = cbook.get_sample_data(os.path.abspath('')+'/juarez.png', asfileobj=True)
@@ -429,6 +438,7 @@ def dibujaGrafo( grafocompleto, individuo, ordenindividuo,generacionActual,indiv
     #plt.imshow(img, zorder=0, extent=[-mapCoordinateExtension*1.42 , mapCoordinateExtension*1.42 , -mapCoordinateExtension  , mapCoordinateExtension  ])
 
     plt.title("Generacion "+str(generacionActual)+ " Individuo "+ str(individuoNumero))
+
     #batchMode = False
     if(batchMode):
         plt.savefig("OutputGraphs/Gen"+str(generacionActual)+"Ind" + str(individuoNumero) + ".png")
@@ -455,8 +465,8 @@ poblacionFitnessNP = np.asarray(fitnessYUnfitnessDePoblacion.fitness)
 
 
 
-for i, individuoAImprimir in enumerate(poblacion):
-    dibujaGrafo(grafoCompleto, individuoAImprimir, None, 0,  i)
+#for i, individuoAImprimir in enumerate(poblacion):
+#    dibujaGrafo(grafoCompleto, individuoAImprimir, None, 0,  i)
 
 
 while numeroDeGeneracion <numeroDeGeneraciones: # pendiente agregar chequeo si se quedo estancado (local minima)
@@ -475,6 +485,7 @@ while numeroDeGeneracion <numeroDeGeneraciones: # pendiente agregar chequeo si s
         hijo1, hijo2 = generarHijos(poblacion[idPadre1-1], poblacion[idPadre2-1], porcentajeMutacion)
         poblacionNueva, fitnessYUnfitnessDePoblacion = compararHijo(fitnessYUnfitnessDePoblacion, hijo1, poblacionNueva, stopDataOrdenado)
         poblacionNueva, fitnessYUnfitnessDePoblacion = compararHijo(fitnessYUnfitnessDePoblacion, hijo2, poblacionNueva, stopDataOrdenado)
+        #print (poblacionNueva)
     numeroDeGeneracion += 1
     nuevamejoraEntreGeneraciones = 1 - (average(fitnessYUnfitnessDePoblacion.fitness) / fitnessYUnfitnessDeGeneracion)
 
