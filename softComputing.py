@@ -439,7 +439,7 @@ lines.append("17 64 14")
 # el archivo se puede obtener de el url vrpURL
 # la definicion de las lineas del archivo estan especificadas en: http://people.brunel.ac.uk/~mastjjb/jeb/orlib/vrpinfo.html
 
-lines = tuple(open('vrpnc6.txt', 'r'))  # archivo
+lines = tuple(open('vrpnc6.txt', 'r'))  # read from benchmark file
 
 
 
@@ -447,15 +447,12 @@ lines = tuple(open('vrpnc6.txt', 'r'))  # archivo
 fitnessYUnfitnessDePoblacion = FitnessUnfitness()
 poblacion = generarPoblacionInicial(stopDataOrdenado, routeSettings)
 fitnessYUnfitnessDePoblacion = calcularFitnessyUnfitnessDePoblacion(stopDataOrdenado, poblacion)
-
 #valores de afinacion
 numeroDeHijosPorGeneracion = 200
 numeroDeGeneraciones = 50
 porcentajeMutacion = 0.01
-
 numeroDeGeneracion = 0
 mejoraEntreGeneraciones = 100.0
-
 poblacionFitnessNP = np.asarray(fitnessYUnfitnessDePoblacion.fitness)
 
 
@@ -465,11 +462,8 @@ poblacionFitnessNP = np.asarray(fitnessYUnfitnessDePoblacion.fitness)
 
 
 while numeroDeGeneracion <numeroDeGeneraciones: # pendiente agregar chequeo si se quedo estancado (local minima)
-
-
     fitnessYUnfitnessDeGeneracion = average(fitnessYUnfitnessDePoblacion.fitness)
     print ("Generacion," + str(numeroDeGeneracion) + ",Mejora," + str(mejoraEntreGeneraciones)+ ",Distancia Promedio," + str(fitnessYUnfitnessDeGeneracion))
-
     poblacionNueva = poblacion
     for i in range(numeroDeHijosPorGeneracion):
         #if i % 100 == 0:
@@ -484,8 +478,6 @@ while numeroDeGeneracion <numeroDeGeneraciones: # pendiente agregar chequeo si s
         #print (poblacionNueva)
     numeroDeGeneracion += 1
     nuevamejoraEntreGeneraciones = 1 - (average(fitnessYUnfitnessDePoblacion.fitness) / fitnessYUnfitnessDeGeneracion)
-
-
     if nuevamejoraEntreGeneraciones  > 0:
         poblacion = poblacionNueva
         mejoraEntreGeneraciones = nuevamejoraEntreGeneraciones
@@ -501,13 +493,6 @@ while numeroDeGeneracion <numeroDeGeneraciones: # pendiente agregar chequeo si s
          #           '_MayorFitness_' + str(np.argmax(poblacionFitnessNP)))
     #else:
     #    print("brincando generacion, Mejora:" + str(nuevamejoraEntreGeneraciones))
-
-
-
-
-
-
-
 
 
 
