@@ -93,13 +93,15 @@ class ParadaCliente:
 # number of customers, vehicle capacity, maximum route time, drop time
 def generarPoblacionInicial(stopData, routeSettings):
     poblacionInicial = []
+    pesosPoblacionInicial = []
     x = list(range(len(stopData)))
     for i in x:
         solucionActual = x[i:] + x[:i]
         rutaActual = 1
         cargaDeRuta = 0
-        for j in x[i:] + x[:i]:
+        for j in solucionActual:
             cargaDeRuta += stopData[j].peso
+            printForDebug('cargaDeRuta:' + str(cargaDeRuta))
             if cargaDeRuta > routeSettings.VehicleCapacity:
                 rutaActual += 1
                 cargaDeRuta = stopData[j].peso
@@ -123,7 +125,7 @@ def mutarSolucion(hijo1,hijo2):
     retryCount = 0
     while hijo1[genAMutar] == hijo2[genAMutar]:
         retryCount += 1
-        if (retryCount>100):
+        if (retryCount>100): #si la poblacion es muy chica se puede quedar iterando indefinidamente
             print ('mutar Solucion 100th retry')
             break
         genAMutar = random.randint(0, len(hijo1)-1)
@@ -180,8 +182,8 @@ def matrixDeSumadeRutas(stopData,matrizDeSuma,rutas): #OPTIMIZAR
 
 def sumaMatrizDeSuma(matrizDeSuma):
     for i, value in enumerate(matrizDeSuma):
-        # el libro dice que es la proporcion (carga/capacidad), pero es practicamente lo mismo
-        matrizDeSuma[i][2] = matrizDeSuma[i][0] - routeSettings.VehicleCapacity  # se calcula el delta del peso
+        # el articulo dice que es la proporcion (carga/capacidad), pero es practicamente lo mismo
+        matrizDeSauma[i][2] = matrizDeSuma[i][0] - routeSettings.VehicleCapacity  # se calcula el delta del peso
         matrizDeSuma[i][3] = matrizDeSuma[i][1] - routeSettings.MaximumRouteTime  # se calcula el delta del tiempo
     return matrizDeSuma
 
@@ -192,17 +194,12 @@ def calculaUnfitness(rutas, stopData):
     # print(solucion)
     # las columnas de solucion son = polarData: magnitud,angulo,peso,id,ruta
     matrizDeSuma = generateMatrizDeCeros(np.amax(rutas), 4)
-
     # rutasNP = np.array(rutas)
     # np.argwhere(rutasNP == 4)
-
-
     # las columnas de matrizDeSuma son: peso, tiempo, delta Peso, delta Tiempo. y la posicion +1 es el id de ruta
     matrizDeSuma = matrixDeSumadeRutas(stopData,matrizDeSuma,rutas)
     matrizDeSuma = sumaMatrizDeSuma(matrizDeSuma)
-
     totales = np.sum(matrizDeSuma, axis=0)  # se suman las columnas
-
     return totales[2] + totales[3]  # se suman los totales de las deltas
 
 
@@ -324,84 +321,22 @@ def dibujaGrafo( grafocompleto, individuo, ordenindividuo,generacionActual,indiv
 
     plt.title("Generacion "+str(generacionActual)+ " Individuo "+ str(individuoNumero))
 
-    batchMode = False
-    if(batchMode):
+    #batchMode = False
+    if(batchMode or not debugmode):
         plt.savefig("OutputGraphs/Gen"+str(generacionActual)+"Ind" + str(individuoNumero) + ".png")
         plt.clf()
     else:
         show()
 
-    routeSettingsParsed = False
-    depotCoordinatesParsed = False
-    stopData = []
-    posicionAnguloPolar = {}
-    for i, line in enumerate(lines):
-        if not routeSettingsParsed:
-            routeSettings = RouteSettings(line.split())
-            routeSettingsParsed = True
-            continue
-        if not depotCoordinatesParsed:
-            coordenadasDepot = CoordenadaCartesiana(line.split())
-            depotCoordinatesParsed = True
-            continue
-        paradaCliente = ParadaCliente(line.split(), i - 1, coordenadasDepot)
-        stopData.append(paradaCliente)
 
-    print('Coordenadas del Depot:' + str(coordenadasDepot.x) + ',' + str(coordenadasDepot.y))
-    print(len(stopData))
-
-    stopDataOrdenado = sorted(stopData, key=lambda stop: stop.coordenadaPolarRespectoDepot.angulo)
-
-    for i, stop in enumerate(stopDataOrdenado):
-        # print("angulo:" + str(stop.coordenadaPolarRespectoDepot.angulo) + " x:" +  str(stop.coordenadaRespectoDepot.x) + " y:" + str(stop.coordenadaRespectoDepot.y))
-        stopData[stop.paradaID - 1].ordenAnguloPolar = i + 1
-        posicionAnguloPolar[str(i + 1)] = (stop.coordenadaRespectoDepot.x, stop.coordenadaRespectoDepot.y)
-
-    # posicionAnguloPolar['0'] = (coordenadasDepot.x, coordenadasDepot.y)
-    posicionAnguloPolar['0'] = (0, 0)
-
-    grafoCompleto = {}
-    depotDistances = {}
-
-    for item in stopData:
-        depotDistances[item.paradaID] = item.coordenadaPolarRespectoDepot.magnitud
-
-    # depotDistances.append((str(stopDataId + 1), magnitude))
+#Inicia Ejecucion de codigo
 
 
-    grafoCompleto[0] = depotDistances
-    # el elemento 0 es el depot, el 1 es el primer elemento del stopData (indice 0)
-
-    for i, originPoint in enumerate(stopData):
-        originPointDistances = {}
-        for j, destinationPoint in enumerate(stopData[i + 1:]):
-            sendCoordenate = CoordenadaCartesiana()
-            sendCoordenate.x = destinationPoint.coordenadaRespectoDepot.x - originPoint.coordenadaRespectoDepot.x
-            sendCoordenate.y = destinationPoint.coordenadaRespectoDepot.y - originPoint.coordenadaRespectoDepot.y
-            originPointDistances[(j + i + 2)] = calculateMagnitude(sendCoordenate);
-        grafoCompleto[(i + 1)] = originPointDistances
-
-    tempVar = 0
-
-    print grafoCompleto[(tempVar)]
+ 
 
 
 
-
-
-# In[2]:
-
-# vrpURL = "http://people.brunel.ac.uk/~mastjjb/jeb/orlib/files/vrpnc10.txt"
-# vrpData = urlopen(vrpURL)
-# lines = tuple(vrpData)
-# lines
-
-
-
-
-# In[3]:
-
-# test Data
+# Datos de prueba
 lines = []
 lines.append("12 20 20 2")
 lines.append("35 35")
@@ -429,17 +364,78 @@ lines.append("26 13 12")
 lines.append("11 28 6")
 lines.append("17 64 14")
 
-#end test data
+#fin de datos de prueba
+verboseLevel = 0;
+verboseLevel = True
+
+def printForDebug(message):
+    if verboseLevel > 0:
+        print message
+    
 
 
-# In[4]:
+# vrpURL = "http://people.brunel.ac.uk/~mastjjb/jeb/orlib/files/vrpnc10.txt"
 
-
-# hay que subir el archivo cada vez que corre el kernel
-# el archivo se puede obtener de el url vrpURL
-# la definicion de las lineas del archivo estan especificadas en: http://people.brunel.ac.uk/~mastjjb/jeb/orlib/vrpinfo.html
 
 lines = tuple(open('vrpnc6.txt', 'r'))  # read from benchmark file
+
+# la definicion de las lineas del archivo estan especificadas en: http://people.brunel.ac.uk/~mastjjb/jeb/orlib/vrpinfo.html
+
+routeSettingsParsed = False
+depotCoordinatesParsed = False
+stopData = []
+posicionAnguloPolar = {}
+for i, line in enumerate(lines):
+    if not routeSettingsParsed:
+        routeSettings = RouteSettings(line.split())
+        routeSettingsParsed = True
+        continue
+    if not depotCoordinatesParsed:
+        coordenadasDepot = CoordenadaCartesiana(line.split())
+        depotCoordinatesParsed = True
+        continue
+    paradaCliente = ParadaCliente(line.split(), i - 1, coordenadasDepot)
+    stopData.append(paradaCliente)
+
+print('Coordenadas del Depot:' + str(coordenadasDepot.x) + ',' + str(coordenadasDepot.y))
+print(len(stopData))
+
+stopDataOrdenado = sorted(stopData, key=lambda stop: stop.coordenadaPolarRespectoDepot.angulo)
+
+for i, stop in enumerate(stopDataOrdenado):
+    printForDebug("angulo:" + str(stop.coordenadaPolarRespectoDepot.angulo) + " x:" +  str(stop.coordenadaRespectoDepot.x) + " y:" + str(stop.coordenadaRespectoDepot.y))
+    stopData[stop.paradaID - 1].ordenAnguloPolar = i + 1
+    posicionAnguloPolar[str(i + 1)] = (stop.coordenadaRespectoDepot.x, stop.coordenadaRespectoDepot.y)
+
+# posicionAnguloPolar['0'] = (coordenadasDepot.x, coordenadasDepot.y)
+posicionAnguloPolar['0'] = (0, 0)
+
+grafoCompleto = {}
+depotDistances = {}
+
+for item in stopData:
+    depotDistances[item.paradaID] = item.coordenadaPolarRespectoDepot.magnitud
+
+# depotDistances.append((str(stopDataId + 1), magnitude))
+
+
+grafoCompleto[0] = depotDistances
+# el elemento 0 es el depot, el 1 es el primer elemento del stopData (indice 0)
+
+for i, originPoint in enumerate(stopData):
+    originPointDistances = {}
+    for j, destinationPoint in enumerate(stopData[i + 1:]):
+        sendCoordenate = CoordenadaCartesiana()
+        sendCoordenate.x = destinationPoint.coordenadaRespectoDepot.x - originPoint.coordenadaRespectoDepot.x
+        sendCoordenate.y = destinationPoint.coordenadaRespectoDepot.y - originPoint.coordenadaRespectoDepot.y
+        originPointDistances[(j + i + 2)] = calculateMagnitude(sendCoordenate);
+    grafoCompleto[(i + 1)] = originPointDistances
+
+tempVar = 0
+
+print grafoCompleto[(tempVar)]
+
+
 
 
 
@@ -456,6 +452,9 @@ mejoraEntreGeneraciones = 100.0
 poblacionFitnessNP = np.asarray(fitnessYUnfitnessDePoblacion.fitness)
 
 
+#fitness es la distancia Recorrida
+#unfitness es la suma de los excesos de peso y distancia
+
 
 #for i, individuoAImprimir in enumerate(poblacion):
 #    dibujaGrafo(grafoCompleto, individuoAImprimir, None, 0,  i)
@@ -466,8 +465,8 @@ while numeroDeGeneracion <numeroDeGeneraciones: # pendiente agregar chequeo si s
     print ("Generacion," + str(numeroDeGeneracion) + ",Mejora," + str(mejoraEntreGeneraciones)+ ",Distancia Promedio," + str(fitnessYUnfitnessDeGeneracion))
     poblacionNueva = poblacion
     for i in range(numeroDeHijosPorGeneracion):
-        #if i % 100 == 0:
-            #print ("Hijo " + str(i))
+        if i % 100 == 0:
+            printForDebug("Hijo " + str(i))
         idPadre1 = random.randint(1, len(poblacion))
         idPadre2 = random.randint(1, len(poblacion))
         while idPadre1 == idPadre2:
@@ -475,7 +474,7 @@ while numeroDeGeneracion <numeroDeGeneraciones: # pendiente agregar chequeo si s
         hijo1, hijo2 = generarHijos(poblacion[idPadre1-1], poblacion[idPadre2-1], porcentajeMutacion)
         poblacionNueva, fitnessYUnfitnessDePoblacion = compararHijo(fitnessYUnfitnessDePoblacion, hijo1, poblacionNueva, stopDataOrdenado)
         poblacionNueva, fitnessYUnfitnessDePoblacion = compararHijo(fitnessYUnfitnessDePoblacion, hijo2, poblacionNueva, stopDataOrdenado)
-        #print (poblacionNueva)
+        printForDebug(poblacionNueva)
     numeroDeGeneracion += 1
     nuevamejoraEntreGeneraciones = 1 - (average(fitnessYUnfitnessDePoblacion.fitness) / fitnessYUnfitnessDeGeneracion)
     if nuevamejoraEntreGeneraciones  > 0:
@@ -491,8 +490,8 @@ while numeroDeGeneracion <numeroDeGeneraciones: # pendiente agregar chequeo si s
                     '_' + str(minAvgDistanceID) + '_avg_' + fitnessMejorIndividuo  )
         #dibujaGrafo(grafoCompleto, poblacion[np.argmax(poblacionFitnessNP)], None, numeroDeGeneracion,
          #           '_MayorFitness_' + str(np.argmax(poblacionFitnessNP)))
-    #else:
-    #    print("brincando generacion, Mejora:" + str(nuevamejoraEntreGeneraciones))
+    else:
+        printForDebug("brincando generacion, Mejora:" + str(nuevamejoraEntreGeneraciones))
 
 
 
