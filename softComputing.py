@@ -21,63 +21,6 @@ import matplotlib.cbook as cbook
 from scipy.misc import imread #sudo pip install Pillow==2.6.0
 
 
-
-
-# In[2]:
-
-# vrpURL = "http://people.brunel.ac.uk/~mastjjb/jeb/orlib/files/vrpnc10.txt"
-# vrpData = urlopen(vrpURL)
-# lines = tuple(vrpData)
-# lines
-
-
-
-
-# In[3]:
-
-# test Data
-lines = []
-lines.append("12 20 20 2")
-lines.append("35 35")
-
-lines.append("7 43 27")
-lines.append("62 48 15")
-lines.append("45 45 10")
-lines.append("25 45 10")
-lines.append("25 25 10")
-lines.append("45 25 10")
-
-lines.append("41 49 10")
-lines.append("35 17 7")
-lines.append("55 45 13")
-lines.append("55 20 19")
-lines.append("15 30 26")
-lines.append("25 30 3")
-lines.append("20 50 5")
-lines.append("10 43 9")
-#
-# lines.append("33 44 20")
-# lines.append("9 56 13")
-#
-# lines.append("66 14 22")
-# lines.append("44 13 28")
-# lines.append("26 13 12")
-# lines.append("11 28 6")
-#
-# lines.append("17 64 14")
-# lines
-
-
-# In[4]:
-
-
-# hay que subir el archivo cada vez que corre el kernel
-# el archivo se puede obtener de el url vrpURL
-# la definicion de las lineas del archivo estan especificadas en: http://people.brunel.ac.uk/~mastjjb/jeb/orlib/vrpinfo.html
-
-lines = tuple(open('vrpnc6.txt', 'r'))  # archivo
-
-
 def calculateMagnitude(_coordenada):
     return math.sqrt(pow(_coordenada.y, 2) + pow(_coordenada.x, 2))
 
@@ -145,65 +88,7 @@ class ParadaCliente:
         return _coordenadaRespectoDepot
 
 
-routeSettingsParsed = False
-depotCoordinatesParsed = False
-stopData = []
-posicionAnguloPolar = {}
-for i, line in enumerate(lines):
-    if not routeSettingsParsed:
-        routeSettings = RouteSettings(line.split())
-        routeSettingsParsed = True
-        continue
-    if not depotCoordinatesParsed:
-        coordenadasDepot = CoordenadaCartesiana(line.split())
-        depotCoordinatesParsed = True
-        continue
-    paradaCliente = ParadaCliente(line.split(), i-1, coordenadasDepot)
-    stopData.append(paradaCliente)
 
-
-print('Coordenadas del Depot:' + str(coordenadasDepot.x) + ',' + str(coordenadasDepot.y))
-print(len(stopData))
-
-stopDataOrdenado = sorted(stopData, key=lambda stop: stop.coordenadaPolarRespectoDepot.angulo)
-
-
-for i, stop in enumerate(stopDataOrdenado):
-    #print("angulo:" + str(stop.coordenadaPolarRespectoDepot.angulo) + " x:" +  str(stop.coordenadaRespectoDepot.x) + " y:" + str(stop.coordenadaRespectoDepot.y))
-    stopData[stop.paradaID-1].ordenAnguloPolar = i+1
-    posicionAnguloPolar[str(i+1)] = (stop.coordenadaRespectoDepot.x, stop.coordenadaRespectoDepot.y)
-
-#posicionAnguloPolar['0'] = (coordenadasDepot.x, coordenadasDepot.y)
-posicionAnguloPolar['0'] = (0, 0)
-
-
-
-
-
-grafoCompleto = {}
-depotDistances = {}
-
-for item in stopData:
-    depotDistances[item.paradaID] = item.coordenadaPolarRespectoDepot.magnitud
-
-#depotDistances.append((str(stopDataId + 1), magnitude))
-
-
-grafoCompleto[0] = depotDistances
-# el elemento 0 es el depot, el 1 es el primer elemento del stopData (indice 0)
-
-for i, originPoint in enumerate(stopData):
-    originPointDistances = {}
-    for j, destinationPoint in enumerate(stopData[i + 1:]):
-        sendCoordenate = CoordenadaCartesiana()
-        sendCoordenate.x = destinationPoint.coordenadaRespectoDepot.x - originPoint.coordenadaRespectoDepot.x
-        sendCoordenate.y = destinationPoint.coordenadaRespectoDepot.y - originPoint.coordenadaRespectoDepot.y
-        originPointDistances[(j + i + 2)] = calculateMagnitude(sendCoordenate);
-    grafoCompleto[(i + 1)] = originPointDistances
-
-tempVar = 0
-
-print grafoCompleto[(tempVar)]
 # routeSettings
 # number of customers, vehicle capacity, maximum route time, drop time
 def generarPoblacionInicial(stopData, routeSettings):
@@ -439,12 +324,122 @@ def dibujaGrafo( grafocompleto, individuo, ordenindividuo,generacionActual,indiv
 
     plt.title("Generacion "+str(generacionActual)+ " Individuo "+ str(individuoNumero))
 
-    #batchMode = False
+    batchMode = False
     if(batchMode):
         plt.savefig("OutputGraphs/Gen"+str(generacionActual)+"Ind" + str(individuoNumero) + ".png")
         plt.clf()
     else:
         show()
+
+    routeSettingsParsed = False
+    depotCoordinatesParsed = False
+    stopData = []
+    posicionAnguloPolar = {}
+    for i, line in enumerate(lines):
+        if not routeSettingsParsed:
+            routeSettings = RouteSettings(line.split())
+            routeSettingsParsed = True
+            continue
+        if not depotCoordinatesParsed:
+            coordenadasDepot = CoordenadaCartesiana(line.split())
+            depotCoordinatesParsed = True
+            continue
+        paradaCliente = ParadaCliente(line.split(), i - 1, coordenadasDepot)
+        stopData.append(paradaCliente)
+
+    print('Coordenadas del Depot:' + str(coordenadasDepot.x) + ',' + str(coordenadasDepot.y))
+    print(len(stopData))
+
+    stopDataOrdenado = sorted(stopData, key=lambda stop: stop.coordenadaPolarRespectoDepot.angulo)
+
+    for i, stop in enumerate(stopDataOrdenado):
+        # print("angulo:" + str(stop.coordenadaPolarRespectoDepot.angulo) + " x:" +  str(stop.coordenadaRespectoDepot.x) + " y:" + str(stop.coordenadaRespectoDepot.y))
+        stopData[stop.paradaID - 1].ordenAnguloPolar = i + 1
+        posicionAnguloPolar[str(i + 1)] = (stop.coordenadaRespectoDepot.x, stop.coordenadaRespectoDepot.y)
+
+    # posicionAnguloPolar['0'] = (coordenadasDepot.x, coordenadasDepot.y)
+    posicionAnguloPolar['0'] = (0, 0)
+
+    grafoCompleto = {}
+    depotDistances = {}
+
+    for item in stopData:
+        depotDistances[item.paradaID] = item.coordenadaPolarRespectoDepot.magnitud
+
+    # depotDistances.append((str(stopDataId + 1), magnitude))
+
+
+    grafoCompleto[0] = depotDistances
+    # el elemento 0 es el depot, el 1 es el primer elemento del stopData (indice 0)
+
+    for i, originPoint in enumerate(stopData):
+        originPointDistances = {}
+        for j, destinationPoint in enumerate(stopData[i + 1:]):
+            sendCoordenate = CoordenadaCartesiana()
+            sendCoordenate.x = destinationPoint.coordenadaRespectoDepot.x - originPoint.coordenadaRespectoDepot.x
+            sendCoordenate.y = destinationPoint.coordenadaRespectoDepot.y - originPoint.coordenadaRespectoDepot.y
+            originPointDistances[(j + i + 2)] = calculateMagnitude(sendCoordenate);
+        grafoCompleto[(i + 1)] = originPointDistances
+
+    tempVar = 0
+
+    print grafoCompleto[(tempVar)]
+
+
+
+
+
+# In[2]:
+
+# vrpURL = "http://people.brunel.ac.uk/~mastjjb/jeb/orlib/files/vrpnc10.txt"
+# vrpData = urlopen(vrpURL)
+# lines = tuple(vrpData)
+# lines
+
+
+
+
+# In[3]:
+
+# test Data
+lines = []
+lines.append("12 20 20 2")
+lines.append("35 35")
+
+lines.append("7 43 27")
+lines.append("62 48 15")
+lines.append("45 45 10")
+lines.append("25 45 10")
+lines.append("25 25 10")
+lines.append("45 25 10")
+
+lines.append("41 49 10")
+lines.append("35 17 7")
+lines.append("55 45 13")
+lines.append("55 20 19")
+lines.append("15 30 26")
+lines.append("25 30 3")
+lines.append("20 50 5")
+lines.append("10 43 9")
+lines.append("33 44 20")
+lines.append("9 56 13")
+lines.append("66 14 22")
+lines.append("44 13 28")
+lines.append("26 13 12")
+lines.append("11 28 6")
+lines.append("17 64 14")
+
+#end test data
+
+
+# In[4]:
+
+
+# hay que subir el archivo cada vez que corre el kernel
+# el archivo se puede obtener de el url vrpURL
+# la definicion de las lineas del archivo estan especificadas en: http://people.brunel.ac.uk/~mastjjb/jeb/orlib/vrpinfo.html
+
+lines = tuple(open('vrpnc6.txt', 'r'))  # archivo
 
 
 
@@ -455,7 +450,7 @@ fitnessYUnfitnessDePoblacion = calcularFitnessyUnfitnessDePoblacion(stopDataOrde
 
 #valores de afinacion
 numeroDeHijosPorGeneracion = 200
-numeroDeGeneraciones = 20
+numeroDeGeneraciones = 50
 porcentajeMutacion = 0.01
 
 numeroDeGeneracion = 0
@@ -470,14 +465,15 @@ poblacionFitnessNP = np.asarray(fitnessYUnfitnessDePoblacion.fitness)
 
 
 while numeroDeGeneracion <numeroDeGeneraciones: # pendiente agregar chequeo si se quedo estancado (local minima)
-    print ("Generacion:"+str(numeroDeGeneracion) + " Mejora:" +  str(mejoraEntreGeneraciones) )
+
 
     fitnessYUnfitnessDeGeneracion = average(fitnessYUnfitnessDePoblacion.fitness)
-    print ("Average fitness:" + str(fitnessYUnfitnessDeGeneracion))
+    print ("Generacion," + str(numeroDeGeneracion) + ",Mejora," + str(mejoraEntreGeneraciones)+ ",Distancia Promedio," + str(fitnessYUnfitnessDeGeneracion))
+
     poblacionNueva = poblacion
     for i in range(numeroDeHijosPorGeneracion):
-        if i % 100 == 0:
-            print ("Hijo " + str(i))
+        #if i % 100 == 0:
+            #print ("Hijo " + str(i))
         idPadre1 = random.randint(1, len(poblacion))
         idPadre2 = random.randint(1, len(poblacion))
         while idPadre1 == idPadre2:
@@ -494,12 +490,17 @@ while numeroDeGeneracion <numeroDeGeneraciones: # pendiente agregar chequeo si s
         poblacion = poblacionNueva
         mejoraEntreGeneraciones = nuevamejoraEntreGeneraciones
         poblacionFitnessNP = np.asarray(fitnessYUnfitnessDePoblacion.fitness)
-        dibujaGrafo(grafoCompleto, poblacion[np.argmin(poblacionFitnessNP)], None, numeroDeGeneracion,
-                    '_MenorFitness_' + str(np.argmin(poblacionFitnessNP)))
-        dibujaGrafo(grafoCompleto, poblacion[np.argmax(poblacionFitnessNP)], None, numeroDeGeneracion,
-                    '_MayorFitness_' + str(np.argmax(poblacionFitnessNP)))
-    else:
-        print("brincando generacion, Mejora:" + str(nuevamejoraEntreGeneraciones))
+        minAvgDistanceID = np.argmin(poblacionFitnessNP)
+        fitnessMejorIndividuo = str(fitnessYUnfitnessDePoblacion.fitness[minAvgDistanceID])
+        dibujaGrafo(grafoCompleto,
+                    poblacion[minAvgDistanceID],
+                    None,
+                    numeroDeGeneracion,
+                    '_' + str(minAvgDistanceID) + '_avg_' + fitnessMejorIndividuo  )
+        #dibujaGrafo(grafoCompleto, poblacion[np.argmax(poblacionFitnessNP)], None, numeroDeGeneracion,
+         #           '_MayorFitness_' + str(np.argmax(poblacionFitnessNP)))
+    #else:
+    #    print("brincando generacion, Mejora:" + str(nuevamejoraEntreGeneraciones))
 
 
 
